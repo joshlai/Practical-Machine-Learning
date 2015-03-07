@@ -1,0 +1,105 @@
+---
+title: 'Pratical Machine Learning Course Project'
+author: "Lai Hsun Hui"
+date: "Mar, 2015"
+output:
+  html_document:
+    keep_md: yes
+  pdf_document: default
+---
+
+# Introduction
+
+With devices such as Jawbone Up, Nike FuelBand, and Fitbit, it is possible to collect large data set on personal activities inexpensively. In this project, we will use the data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har. The objective of this project is to predict the manner of performing unilateral dumbbell biceps curls based on data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. The 5 possible methods include -
+
+A: exactly according to the specification
+B: throwing the elbows to the front
+C: lifting the dumbbell only halfway
+D: lowering the dumbbell only halfway
+E: throwing the hips to the front
+
+
+# Data processing and transformation
+
+Load the library and data set into memory.
+```{r}
+library(caret)
+library(rattle)
+
+trainingData <- read.csv(file="pml-training.csv", header=TRUE, as.is = TRUE, stringsAsFactors = FALSE, sep=',', na.strings=c('NA','','#DIV/0!'))
+testingData <- read.csv(file="pml-testing.csv", header=TRUE, as.is = TRUE, stringsAsFactors = FALSE, sep=',', na.strings=c('NA','','#DIV/0!'))
+```
+
+Transform and observe the data
+```{r}
+trainingData$classe <- as.factor(trainingData$classe)  
+str(trainingData)
+```
+
+There are many irrelevant ('NA', non-useful and empty) variables in the predictors. The prediction should only on the accelerometers values of belt, forearm, arm and dumbell. As such, the non-accelerometer measurements and irrelavant predictors are discarded.
+```{r}
+NApredictor <- apply(trainingData,2,function(x) {sum(is.na(x))}) 
+trainingData <- trainingData[,which(NApredictor == 0)]
+testingData <- testingData[,which(NApredictor == 0)]
+```
+
+## Preprocess variables
+Standardizing (centering and scaling) and impute missing data using nearest-neighbor method for all variables except "classe") which is the outcome we want to predict.
+```{r}
+variable <- which(lapply(trainingData, class) %in% "numeric")
+
+processed <- preProcess(trainingData[,variable],method=c('knnImpute', 'center', 'scale'))
+trainProcessed <- predict(processed, trainingData[,variable])
+trainProcessed$classe <- trainingData$classe
+testProcessed <- predict(processed,testingData[,variable])
+```
+
+## Remove the non zero variables
+Removing the variables with values near zero, as these are not useful in the prediction.
+```{r}
+nzv <- nearZeroVar(trainProcessed,saveMetrics=TRUE)
+trainProcessed <- trainProcessed[,nzv$nzv==FALSE]
+nzv <- nearZeroVar(testProcessed,saveMetrics=TRUE)
+testProcessed <- testProcessed[,nzv$nzv==FALSE]
+```
+
+## Create cross validation set
+Divided the processed training data in two parts - (1) training; and (2) cross validation.
+```{r}
+set.seed(45364)
+forTraining = createDataPartition(trainProcessed$classe, p = 0.6, list=FALSE)
+training = trainProcessed[forTraining,]
+validate = trainProcessed[-forTraining,]
+```
+
+## Train model
+Random Forest is used, as it has high predicition accuracy. The model uses the remaining predictors in the processed training data; cross validation method is used to validate the prediction results.
+```{r}
+model <- train(classe ~., method="rf", data=training)
+```
+
+## Compute processed training and cross validation data
+Training:
+```{r}
+predictTraining <- predict(model, training)
+confusionMatrix(predictTraining, training$classe)
+```
+
+Cross validation:
+```{r}
+predictValidate <- predict(model, validate)
+confusionMatrix(predictValidate, validate$classe)
+```
+
+## Generate Answers
+Generating answers and writing in txt files.
+```{r}
+pml_write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0("problem_id_",i,".txt")
+    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+  }
+}
+pml_write_files(predict(model, testProcessed))
+```
