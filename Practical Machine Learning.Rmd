@@ -21,10 +21,17 @@ E: throwing the hips to the front
 
 # Data processing and transformation
 
-Load the library and data set into memory.
+Load the library and data set into memory. Also enable multicore processing due to complex computation
 ```{r}
 library(caret)
 library(rattle)
+library(cluster)
+library(parallel)
+library(doSNOW)
+
+coreNumber=max(detectCores(),1)
+cluster=makeCluster(coreNumber,type="SOCK", outfile="")
+registerDoSNOW(cluster)
 
 trainingData <- read.csv(file="pml-training.csv", header=TRUE, as.is = TRUE, stringsAsFactors = FALSE, sep=',', na.strings=c('NA','','#DIV/0!'))
 testingData <- read.csv(file="pml-testing.csv", header=TRUE, as.is = TRUE, stringsAsFactors = FALSE, sep=',', na.strings=c('NA','','#DIV/0!'))

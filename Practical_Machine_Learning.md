@@ -15,7 +15,7 @@ E: throwing the hips to the front
 
 # Data processing and transformation
 
-Load the library and data set into memory.
+Load the library and data set into memory. Also enable multicore processing due to complex computation
 
 ```r
 library(caret)
@@ -37,6 +37,44 @@ library(rattle)
 ```
 
 ```r
+library(cluster)
+library(parallel)
+library(doSNOW)
+```
+
+```
+## Warning: package 'doSNOW' was built under R version 3.1.3
+```
+
+```
+## Loading required package: foreach
+## Loading required package: iterators
+## Loading required package: snow
+```
+
+```
+## Warning: package 'snow' was built under R version 3.1.3
+```
+
+```
+## 
+## Attaching package: 'snow'
+## 
+## The following objects are masked from 'package:parallel':
+## 
+##     clusterApply, clusterApplyLB, clusterCall, clusterEvalQ,
+##     clusterExport, clusterMap, clusterSplit, makeCluster,
+##     parApply, parCapply, parLapply, parRapply, parSapply,
+##     splitIndices, stopCluster
+```
+
+```r
+require(doSNOW)
+
+coreNumber=max(detectCores(),1)
+cluster=makeCluster(coreNumber,type="SOCK", outfile="")
+registerDoSNOW(cluster)
+
 trainingData <- read.csv(file="pml-training.csv", header=TRUE, as.is = TRUE, stringsAsFactors = FALSE, sep=',', na.strings=c('NA','','#DIV/0!'))
 testingData <- read.csv(file="pml-testing.csv", header=TRUE, as.is = TRUE, stringsAsFactors = FALSE, sep=',', na.strings=c('NA','','#DIV/0!'))
 ```
@@ -259,33 +297,33 @@ confusionMatrix(predictValidate, validate$classe)
 ## 
 ##           Reference
 ## Prediction    A    B    C    D    E
-##          A 2228   10    0    0    0
-##          B    4 1496   15    0    0
-##          C    0   12 1342   21    0
-##          D    0    0   11 1263    8
-##          E    0    0    0    2 1434
+##          A 2229   11    0    0    0
+##          B    3 1497   14    0    0
+##          C    0   10 1343   16    0
+##          D    0    0   11 1268    7
+##          E    0    0    0    2 1435
 ## 
 ## Overall Statistics
 ##                                           
-##                Accuracy : 0.9894          
-##                  95% CI : (0.9869, 0.9916)
+##                Accuracy : 0.9906          
+##                  95% CI : (0.9882, 0.9926)
 ##     No Information Rate : 0.2845          
 ##     P-Value [Acc > NIR] : < 2.2e-16       
 ##                                           
-##                   Kappa : 0.9866          
+##                   Kappa : 0.9881          
 ##  Mcnemar's Test P-Value : NA              
 ## 
 ## Statistics by Class:
 ## 
 ##                      Class: A Class: B Class: C Class: D Class: E
-## Sensitivity            0.9982   0.9855   0.9810   0.9821   0.9945
-## Specificity            0.9982   0.9970   0.9949   0.9971   0.9997
-## Pos Pred Value         0.9955   0.9875   0.9760   0.9852   0.9986
-## Neg Pred Value         0.9993   0.9965   0.9960   0.9965   0.9988
+## Sensitivity            0.9987   0.9862   0.9817   0.9860   0.9951
+## Specificity            0.9980   0.9973   0.9960   0.9973   0.9997
+## Pos Pred Value         0.9951   0.9888   0.9810   0.9860   0.9986
+## Neg Pred Value         0.9995   0.9967   0.9961   0.9973   0.9989
 ## Prevalence             0.2845   0.1935   0.1744   0.1639   0.1838
-## Detection Rate         0.2840   0.1907   0.1710   0.1610   0.1828
-## Detection Prevalence   0.2852   0.1931   0.1752   0.1634   0.1830
-## Balanced Accuracy      0.9982   0.9913   0.9879   0.9896   0.9971
+## Detection Rate         0.2841   0.1908   0.1712   0.1616   0.1829
+## Detection Prevalence   0.2855   0.1930   0.1745   0.1639   0.1832
+## Balanced Accuracy      0.9983   0.9917   0.9889   0.9916   0.9974
 ```
 
 ## Generate Answers
